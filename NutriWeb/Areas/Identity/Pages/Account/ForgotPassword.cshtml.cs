@@ -16,11 +16,16 @@ namespace NutriWeb.Areas.Identity.Pages.Account
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IEmailSender _emailSender;
+        private readonly ILogger<ForgotPasswordModel> _logger;
 
-        public ForgotPasswordModel(UserManager<ApplicationUser> userManager, IEmailSender emailSender)
+        public ForgotPasswordModel(
+            UserManager<ApplicationUser> userManager, 
+            IEmailSender emailSender,
+            ILogger<ForgotPasswordModel> logger)
         {
             _userManager = userManager;
             _emailSender = emailSender;
+            _logger = logger;
         }
 
         [BindProperty]
@@ -41,25 +46,31 @@ namespace NutriWeb.Areas.Identity.Pages.Account
         {
             if (ModelState.IsValid)
             {
-                var user = await _userManager.FindByEmailAsync(Input.Email);
+                var cleanEmail = Input.Email.Trim();
+                _logger.LogInformation("Попытка сброса пароля для Email: {Email}", cleanEmail);
+
+                var user = await _userManager.FindByEmailAsync(cleanEmail);
                 if (user == null)
                 {
-                    // В целях безопасности не сообщаем, существует ли email в базе
+                    _logger.LogWarning("Пользователь с Email {Email} НЕ НАЙДЕН в базе данных!", cleanEmail);
                     return RedirectToPage("./ForgotPasswordConfirmation");
                 }
 
-                // Генерация токена сброса пароля
+                _logger.LogInformation("Пользователь найден (Id: {Id}). Генерируем токен...", user.Id);
+
                 var code = await _userManager.GeneratePasswordResetTokenAsync(user);
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
                 var callbackUrl = Url.Page(
                     "/Account/ResetPassword",
                     pageHandler: null,
-                    values: new { area = "Identity", code, email = Input.Email },
+                    values: new { area = "Identity", code, email = cleanEmail },
                     protocol: Request.Scheme);
 
+                _logger.LogInformation("Передаем письмо в EmailSender...");
+
                 await _emailSender.SendEmailAsync(
-                    Input.Email,
+                    cleanEmail,
                     "Восстановление пароля NutriWeb",
                     $"Для сброса пароля <a href='{HtmlEncoder.Default.Encode(callbackUrl!)}'>перейдите по этой ссылке</a>.");
 
