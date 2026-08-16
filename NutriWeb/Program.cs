@@ -29,10 +29,23 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 
 var app = builder.Build();
 
-// ИНИЦИАЛИЗАЦИЯ РОЛИ И АККАУНТА АДМИНИСТРАТОРА
+// ИНИЦИАЛИЗАЦИЯ БАЗЫ ДАННЫХ, РОЛЕЙ И АККАУНТА АДМИНИСТРАТОРА
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+
+    // 0. Автоматическое создание/применение миграций базы данных при старте
+    try
+    {
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        dbContext.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Ошибка при авто-применении миграций базы данных.");
+    }
+
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
