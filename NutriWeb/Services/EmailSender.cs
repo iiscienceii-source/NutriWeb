@@ -1,6 +1,7 @@
-using System.Net;
-using System.Net.Mail;
+using MailKit.Net.Smtp;
+using MailKit.Security;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using MimeKit;
 
 namespace NutriWeb.Services
 {
@@ -18,8 +19,6 @@ namespace NutriWeb.Services
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
             var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
-
-            // Порт 587 используется по умолчанию для STARTTLS в System.Net.Mail.SmtpClient
             var portStr = _configuration["EmailSettings:Port"] ?? "587";
             int port = int.TryParse(portStr, out var p) ? p : 587;
 
@@ -32,34 +31,39 @@ namespace NutriWeb.Services
                 return;
             }
 
-            // Запускаем отправку в фоновой задаче, чтобы фронтенд сразу перенаправлял пользователя
+            // Отправляем асинхронно в фоновой задаче
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    using var client = new SmtpClient(smtpServer, port)
+                    var message = new MimeMessage();
+                    message.From.Add(new MailboxAddress("NutriWeb", senderEmail));
+                    message.To.Add(new MailboxAddress("", email));
+                    message.Subject = subject;
+
+                    var bodyBuilder = new BodyBuilder
                     {
-                        Credentials = new NetworkCredential(senderEmail, password),
-                        EnableSsl = true,
-                        Timeout = 5000 // Жёсткий таймаут 5 секунд
+                        HtmlBody = htmlMessage
                     };
+                    message.Body = bodyBuilder.ToMessageBody();
 
-                    using var mailMessage = new MailMessage
-                    {
-                        From = new MailAddress(senderEmail, "NutriWeb"),
-                        Subject = subject,
-                        Body = htmlMessage,
-                        IsBodyHtml = true
-                    };
+                    using var client = new SmtpClient();
 
-                    mailMessage.To.Add(email);
+                    // Выбираем режим безопасности в зависимости от порта
+                    var secureSocketOptions = port == 465
+                        ? SecureSocketOptions.SslOnConnect
+                        : SecureSocketOptions.StartTls;
 
-                    await client.SendMailAsync(mailMessage);
-                    _logger.LogInformation("EmailSender: Письмо восстановления пароля отправлено на {Email}", email);
+                    await client.ConnectAsync(smtpServer, port, secureSocketOptions);
+                    await client.AuthenticateAsync(senderEmail, password);
+                    await client.SendAsync(message);
+                    await client.DisconnectAsync(true);
+
+                    _logger.LogInformation("EmailSender: Письмо восстановления пароля успешно отправлено на {Email}", email);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "EmailSender: Ошибка при отправке письма через SMTP на {Email}", email);
+                    _logger.LogError(ex, "EmailSender: Ошибка при отправке письма через MailKit на {Email}", email);
                 }
             });
 
