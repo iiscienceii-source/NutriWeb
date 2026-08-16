@@ -1,9 +1,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
-COPY ["NutriWeb.csproj", "./"]
-RUN dotnet restore "NutriWeb.csproj"
+COPY *.csproj ./
+RUN dotnet restore
 COPY . .
-RUN dotnet publish "NutriWeb.csproj" -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 COPY --from=build /app/publish .
