@@ -31,7 +31,7 @@ namespace NutriWeb.Services
                 return;
             }
 
-            // Отправляем асинхронно в фоновой задаче
+            // Фоновая асинхронная отправка, чтобы веб-страница не зависала
             _ = Task.Run(async () =>
             {
                 try
@@ -49,7 +49,7 @@ namespace NutriWeb.Services
 
                     using var client = new SmtpClient();
 
-                    // Выбираем режим безопасности в зависимости от порта
+                    // Выбираем правильный режим шифрования под порт Render
                     var secureSocketOptions = port == 465
                         ? SecureSocketOptions.SslOnConnect
                         : SecureSocketOptions.StartTls;
@@ -59,7 +59,7 @@ namespace NutriWeb.Services
                     await client.SendAsync(message);
                     await client.DisconnectAsync(true);
 
-                    _logger.LogInformation("EmailSender: Письмо восстановления пароля успешно отправлено на {Email}", email);
+                    _logger.LogInformation("EmailSender: Письмо сброса пароля успешно отправлено на {Email}", email);
                 }
                 catch (Exception ex)
                 {
