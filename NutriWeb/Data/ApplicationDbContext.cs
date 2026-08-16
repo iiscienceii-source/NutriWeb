@@ -24,7 +24,7 @@ namespace NutriWeb.Data
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Начальное заполнение тарифных групп с явным указанием типа decimal (450m, 650m, 350m)
+            // Начальное заполнение тарифных групп с явным типом decimal
             builder.Entity<PriceGroup>().HasData(
                 new PriceGroup { Id = 1, Name = "Чистое питание", Description = "Базовые блюда, супы, горячее и соусы", PriceUah = 450m },
                 new PriceGroup { Id = 2, Name = "Живое тесто & Сладкое", Description = "Безглютеновый хлеб, выпечка, десерты", PriceUah = 650m },

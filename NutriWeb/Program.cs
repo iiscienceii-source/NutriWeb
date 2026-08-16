@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using NutriWeb.Data;
 using NutriWeb.Models;
 using NutriWeb.Services;
@@ -61,13 +63,31 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        var databaseCreator = dbContext.Database.GetService<IRelationalDatabaseCreator>();
 
-        // Гарантированное прямое создание структуры таблиц в Neon PostgreSQL без конфликтов миграций
-        await dbContext.Database.EnsureCreatedAsync();
+        // Если таблицы Identity отсутствуют, создаем все таблицы напрямую
+        if (!await databaseCreator.HasTablesAsync())
+        {
+            await databaseCreator.CreateTablesAsync();
+        }
+        else
+        {
+            // Проверяем наличие ключевой таблицы AspNetRoles, если ее нет — пересоздаем структуру
+            try
+            {
+                await dbContext.Database.ExecuteSqlRawAsync("SELECT 1 FROM \"AspNetRoles\" LIMIT 1;");
+            }
+            catch
+            {
+                logger.LogWarning("Таблицы Identity отсутствуют. Пересоздаем структуру базы данных...");
+                await dbContext.Database.EnsureDeletedAsync();
+                await dbContext.Database.EnsureCreatedAsync();
+            }
+        }
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Ошибка при автоматическом создании структуры базы данных.");
+        logger.LogError(ex, "Ошибка при подготовке структуры базы данных.");
     }
 
     try
