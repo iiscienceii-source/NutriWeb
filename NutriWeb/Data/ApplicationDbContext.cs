@@ -24,11 +24,11 @@ namespace NutriWeb.Data
                 .HasForeignKey(s => s.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // Начальное заполнение тарифных групп
+            // Начальное заполнение тарифных групп с явным указанием типа decimal (450m, 650m, 350m)
             builder.Entity<PriceGroup>().HasData(
-                new PriceGroup { Id = 1, Name = "Чистое питание", Description = "Базовые блюда, супы, горячее и соусы", PriceUah = 450 },
-                new PriceGroup { Id = 2, Name = "Живое тесто & Сладкое", Description = "Безглютеновый хлеб, выпечка, десерты", PriceUah = 650 },
-                new PriceGroup { Id = 3, Name = "Суперфуды & Смузи", Description = "Детокс-напитки, витаминные боулы и эликсиры", PriceUah = 350 }
+                new PriceGroup { Id = 1, Name = "Чистое питание", Description = "Базовые блюда, супы, горячее и соусы", PriceUah = 450m },
+                new PriceGroup { Id = 2, Name = "Живое тесто & Сладкое", Description = "Безглютеновый хлеб, выпечка, десерты", PriceUah = 650m },
+                new PriceGroup { Id = 3, Name = "Суперфуды & Смузи", Description = "Детокс-напитки, витаминные боулы и эликсиры", PriceUah = 350m }
             );
         }
     }

@@ -61,21 +61,13 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
-        // Применяем миграции напрямую в асинхронном режиме
-        await dbContext.Database.MigrateAsync();
+
+        // Гарантированное прямое создание структуры таблиц в Neon PostgreSQL без конфликтов миграций
+        await dbContext.Database.EnsureCreatedAsync();
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Ошибка при выполнении MigrateAsync, пробуем EnsureCreatedAsync...");
-        try
-        {
-            var dbContext = services.GetRequiredService<ApplicationDbContext>();
-            await dbContext.Database.EnsureCreatedAsync();
-        }
-        catch (Exception innerEx)
-        {
-            logger.LogError(innerEx, "Критическая ошибка при создании структуры БД.");
-        }
+        logger.LogError(ex, "Ошибка при автоматическом создании структуры базы данных.");
     }
 
     try
@@ -83,13 +75,13 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-        // 2. Создаем роль Admin
+        // 1. Создаем роль Admin
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
 
-        // 3. Создаем аккаунт администратора по умолчанию
+        // 2. Создаем аккаунт администратора по умолчанию
         var adminEmail = "admin@nutriweb.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
