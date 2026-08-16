@@ -12,7 +12,7 @@ var options = new WebApplicationOptions
 
 var builder = WebApplication.CreateBuilder(options);
 
-// Отключаем FileSystemWatcher (reloadOnChange), чтобы избежать ошибки лимита inotify в Linux/Docker
+// Отключаем FileSystemWatcher (reloadOnChange) для предотвращения ошибки лимита inotify в Linux/Docker
 builder.Configuration.Sources.Clear();
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
@@ -24,7 +24,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 // Автоматическое переключение между PostgreSQL (Neon) и SQLite (локально)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres") || connectionString.StartsWith("Host=")))
+    if (!string.IsNullOrEmpty(connectionString) &&
+       (connectionString.StartsWith("postgres") || connectionString.Contains("Host=")))
     {
         options.UseNpgsql(connectionString);
     }
