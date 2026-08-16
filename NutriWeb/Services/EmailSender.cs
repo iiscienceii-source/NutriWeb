@@ -18,8 +18,10 @@ namespace NutriWeb.Services
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
             var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
-            var portStr = _configuration["EmailSettings:Port"] ?? "465";
-            int port = int.TryParse(portStr, out var p) ? p : 465;
+
+            // Порт 587 используется по умолчанию для STARTTLS в System.Net.Mail.SmtpClient
+            var portStr = _configuration["EmailSettings:Port"] ?? "587";
+            int port = int.TryParse(portStr, out var p) ? p : 587;
 
             var senderEmail = _configuration["EmailSettings:SenderEmail"];
             var password = _configuration["EmailSettings:Password"]?.Replace(" ", "");
@@ -30,32 +32,38 @@ namespace NutriWeb.Services
                 return;
             }
 
-            try
+            // Запускаем отправку в фоновой задаче, чтобы фронтенд сразу перенаправлял пользователя
+            _ = Task.Run(async () =>
             {
-                using var client = new SmtpClient(smtpServer, port)
+                try
                 {
-                    Credentials = new NetworkCredential(senderEmail, password),
-                    EnableSsl = true,
-                    Timeout = 10000 // Таймаут 10 секунд, чтобы страница не зависала
-                };
+                    using var client = new SmtpClient(smtpServer, port)
+                    {
+                        Credentials = new NetworkCredential(senderEmail, password),
+                        EnableSsl = true,
+                        Timeout = 5000 // Жёсткий таймаут 5 секунд
+                    };
 
-                var mailMessage = new MailMessage
+                    using var mailMessage = new MailMessage
+                    {
+                        From = new MailAddress(senderEmail, "NutriWeb"),
+                        Subject = subject,
+                        Body = htmlMessage,
+                        IsBodyHtml = true
+                    };
+
+                    mailMessage.To.Add(email);
+
+                    await client.SendMailAsync(mailMessage);
+                    _logger.LogInformation("EmailSender: Письмо восстановления пароля отправлено на {Email}", email);
+                }
+                catch (Exception ex)
                 {
-                    From = new MailAddress(senderEmail, "NutriWeb"),
-                    Subject = subject,
-                    Body = htmlMessage,
-                    IsBodyHtml = true
-                };
+                    _logger.LogError(ex, "EmailSender: Ошибка при отправке письма через SMTP на {Email}", email);
+                }
+            });
 
-                mailMessage.To.Add(email);
-
-                await client.SendMailAsync(mailMessage);
-                _logger.LogInformation("EmailSender: Письмо восстановление пароля отправлено на {Email}", email);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "EmailSender: Ошибка при отправке письма через SMTP на {Email}", email);
-            }
+            await Task.CompletedTask;
         }
     }
 }
