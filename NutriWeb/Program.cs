@@ -10,7 +10,7 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args
 });
 
-// Отключаем FileSystemWatcher для предотвращения ошибки inotify в Linux/Docker
+// Отключаем FileSystemWatcher (ReloadOnChange) для предотвращения ошибки лимита inotify в Linux/Docker
 builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
 {
     foreach (var source in config.Sources.OfType<Microsoft.Extensions.Configuration.Json.JsonConfigurationSource>())
@@ -19,11 +19,20 @@ builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
     }
 });
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Data Source=nutriweb.db";
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+// Автоматическое переключение между PostgreSQL (Neon) и SQLite (локально)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlite(connectionString));
+{
+    if (!string.IsNullOrEmpty(connectionString) && (connectionString.StartsWith("postgres") || connectionString.StartsWith("Host=")))
+    {
+        options.UseNpgsql(connectionString);
+    }
+    else
+    {
+        options.UseSqlite(connectionString ?? "Data Source=nutriweb.db");
+    }
+});
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
     options.SignIn.RequireConfirmedAccount = false;
@@ -47,6 +56,7 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
+    // 1. Автоматическое применение миграций и создание таблиц
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
@@ -61,11 +71,13 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
+    // 2. Создаем роль Admin
     if (!await roleManager.RoleExistsAsync("Admin"))
     {
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
+    // 3. Создаем аккаунт администратора по умолчанию
     var adminEmail = "admin@nutriweb.com";
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
