@@ -12,7 +12,7 @@ var options = new WebApplicationOptions
 
 var builder = WebApplication.CreateBuilder(options);
 
-// Отключаем FileSystemWatcher для предотвращения ошибки inotify в Docker
+// Отключаем FileSystemWatcher (reloadOnChange) для предотвращения ошибки лимита inotify в Linux/Docker
 builder.Configuration.Sources.Clear();
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
@@ -61,26 +61,35 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
-        // Гарантированное создание всех таблиц в PostgreSQL
-        await dbContext.Database.EnsureCreatedAsync();
+        // Применяем миграции напрямую в асинхронном режиме
+        await dbContext.Database.MigrateAsync();
     }
     catch (Exception ex)
     {
-        logger.LogError(ex, "Ошибка при создании структуры базы данных.");
+        logger.LogError(ex, "Ошибка при выполнении MigrateAsync, пробуем EnsureCreatedAsync...");
+        try
+        {
+            var dbContext = services.GetRequiredService<ApplicationDbContext>();
+            await dbContext.Database.EnsureCreatedAsync();
+        }
+        catch (Exception innerEx)
+        {
+            logger.LogError(innerEx, "Критическая ошибка при создании структуры БД.");
+        }
     }
-
-    var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
-    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
     try
     {
-        // Создаем роль Admin
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+        // 2. Создаем роль Admin
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
             await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
 
-        // Создаем аккаунт администратора по умолчанию
+        // 3. Создаем аккаунт администратора по умолчанию
         var adminEmail = "admin@nutriweb.com";
         var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
