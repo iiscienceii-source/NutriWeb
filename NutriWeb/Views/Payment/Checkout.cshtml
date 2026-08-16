@@ -1,0 +1,204 @@
+﻿@model NutriWeb.Models.CheckoutViewModel
+@{
+    ViewData["Title"] = "Оформление подписки";
+}
+
+<style>
+    .pay-method-btn {
+        flex: 1;
+        padding: 10px 5px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: var(--text-muted);
+        font-size: 0.82rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+        .pay-method-btn:hover {
+            border-color: var(--neon-cyan);
+            color: #fff;
+        }
+
+        .pay-method-btn.active {
+            background: rgba(0, 242, 254, 0.12);
+            border-color: var(--neon-cyan);
+            color: #fff;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(0, 242, 254, 0.2);
+        }
+</style>
+
+<div style="max-width: 500px; margin: 50px auto; padding: 0 20px;">
+    <div class="glass-panel" style="padding: 35px; background: rgba(12, 16, 23, 0.75);">
+        <h2 style="text-align: center; color: var(--neon-cyan); margin-top: 0; text-transform: uppercase; letter-spacing: 1px;">
+            Оформление доступа
+        </h2>
+
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 10px; padding: 15px; margin: 20px 0 25px 0; text-align: center;">
+            <span style="color: var(--accent-sage); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; display: block;">Выбранный тариф</span>
+            <h3 style="margin: 5px 0; color: #fff;">@Model.GroupName</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0 0 10px 0;">@Model.GroupDescription</p>
+            <div style="font-size: 1.4rem; font-weight: bold; color: #10b981;">
+                @Model.PriceUah грн
+                <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">
+                    / @(Model.MonthsPeriod switch
+                    {
+                        6 => "6 месяцев (-25%)",
+                        12 => "12 месяцев (-50%)",
+                        _ => "1 месяц"
+                    })
+                </span>
+            </div>
+        </div>
+
+        <!-- Переключатель способов оплаты -->
+        <div style="margin-bottom: 22px;">
+            <label style="display: block; color: var(--accent-sage); margin-bottom: 8px; font-size: 0.85rem; text-align: center;">
+                Выберите способ оплаты
+            </label>
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="pay-method-btn active" onclick="selectPaymentMethod('Card', this)">
+                    💳 Карта
+                </button>
+                <button type="button" class="pay-method-btn" onclick="selectPaymentMethod('GooglePay', this)">
+                    <span style="font-weight: 700; color: #4285F4;">G</span>Pay
+                </button>
+                <button type="button" class="pay-method-btn" onclick="selectPaymentMethod('ApplePay', this)">
+                    🍎 Apple Pay
+                </button>
+            </div>
+        </div>
+
+        <form asp-action="ProcessPayment" method="post" id="checkoutForm">
+            <input type="hidden" asp-for="GroupId" />
+            <input type="hidden" asp-for="GroupName" />
+            <input type="hidden" asp-for="PriceUah" />
+            <input type="hidden" asp-for="MonthsPeriod" />
+            <input type="hidden" asp-for="PaymentMethod" id="paymentMethodInput" value="Card" />
+
+            <!-- Поля банковской карты -->
+            <div id="cardFieldsBlock">
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Имя и Фамилия на карте</label>
+                    <input asp-for="CardHolder" id="cardHolderInput" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" placeholder="YEVHEN POLUPAN" required />
+                </div>
+
+                <div style="margin-bottom: 18px;">
+                    <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Номер карты</label>
+                    <input asp-for="CardNumber" id="cardNumberInput" maxlength="19" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" placeholder="4441 0000 0000 1234" required />
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 25px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Срок (ММ/ГГ)</label>
+                        <input asp-for="ExpiryDate" id="expiryInput" maxlength="5" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" placeholder="12/28" required />
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">CVV</label>
+                        <input asp-for="Cvv" id="cvvInput" type="password" maxlength="3" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" placeholder="•••" required />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Информационный блок быстрых платежей -->
+            <div id="expressPaymentInfo" style="display: none; padding: 20px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px dashed var(--glass-border); text-align: center; margin-bottom: 25px;">
+                <p id="expressInfoText" style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                    Вы будете перенаправлены на авторизацию экспресс-оплаты.
+                </p>
+            </div>
+
+            <button type="submit" id="submitPaymentBtn" class="btn-futuristic" style="width: 100%; padding: 12px; font-size: 0.95rem; font-weight: bold;">
+                Оплатить @Model.PriceUah грн
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/recipes/paid" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none;">
+                ← Вернуться в каталог
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    function selectPaymentMethod(method, btn) {
+        document.querySelectorAll('.pay-method-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const methodInput = document.getElementById('paymentMethodInput');
+        const cardFields = document.getElementById('cardFieldsBlock');
+        const expressInfo = document.getElementById('expressPaymentInfo');
+        const expressText = document.getElementById('expressInfoText');
+        const submitBtn = document.getElementById('submitPaymentBtn');
+
+        const holderInput = document.getElementById('cardHolderInput');
+        const numberInput = document.getElementById('cardNumberInput');
+        const expiryInput = document.getElementById('expiryInput');
+        const cvvInput = document.getElementById('cvvInput');
+
+        methodInput.value = method;
+
+        if (method === 'Card') {
+            cardFields.style.display = 'block';
+            expressInfo.style.display = 'none';
+
+            holderInput.required = true;
+            numberInput.required = true;
+            expiryInput.required = true;
+            cvvInput.required = true;
+
+            submitBtn.style.background = '';
+            submitBtn.style.color = '';
+            submitBtn.innerHTML = `Оплатить ${@Model.PriceUah} грн`;
+        } else if (method === 'GooglePay') {
+            cardFields.style.display = 'none';
+            expressInfo.style.display = 'block';
+            expressText.innerHTML = 'Оплата пройдет через безопасный шлюз <strong>Google Pay</strong>.';
+
+            holderInput.required = false;
+            numberInput.required = false;
+            expiryInput.required = false;
+            cvvInput.required = false;
+
+            submitBtn.style.background = '#000';
+            submitBtn.style.color = '#fff';
+            submitBtn.innerHTML = `Оплатить через <span style="color:#4285F4; font-weight:bold; margin-left:4px;">G</span><span style="color:#EA4335;">P</span><span style="color:#FBBC05;">a</span><span style="color:#34A853;">y</span>`;
+        } else if (method === 'ApplePay') {
+            cardFields.style.display = 'none';
+            expressInfo.style.display = 'block';
+            expressText.innerHTML = 'Оплата пройдет через экспресс-подтверждение <strong>Apple Pay</strong>.';
+
+            holderInput.required = false;
+            numberInput.required = false;
+            expiryInput.required = false;
+            cvvInput.required = false;
+
+            submitBtn.style.background = '#000';
+            submitBtn.style.color = '#fff';
+            submitBtn.innerHTML = `Оплатить через 🍎 Apple Pay`;
+        }
+    }
+
+    // Автоматическое форматирование даты (ММ/ГГ)
+    document.getElementById('expiryInput').addEventListener('input', function (e) {
+        let input = e.target.value.replace(/\D/g, '');
+        if (input.length > 2) {
+            e.target.value = input.substring(0, 2) + '/' + input.substring(2, 4);
+        } else {
+            e.target.value = input;
+        }
+    });
+
+    // Автоматическое разделение пробелами каждые 4 цифры карты
+    document.getElementById('cardNumberInput').addEventListener('input', function (e) {
+        let input = e.target.value.replace(/\D/g, '').substring(0, 16);
+        let formatted = input.match(/.{1,4}/g)?.join(' ') || '';
+        e.target.value = formatted;
+    });
+</script>

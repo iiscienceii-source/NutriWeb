@@ -1,0 +1,424 @@
+﻿@model List<NutriWeb.Controllers.PaidGroupViewModel>
+@{
+    ViewData["Title"] = "Платные рецепты";
+}
+
+<style>
+    * {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+    }
+
+    @@media print {
+        body {
+            display: none !important;
+        }
+    }
+
+    .screenshot-protected.blurred {
+        filter: blur(35px) brightness(0) !important;
+        opacity: 0 !important;
+        transition: none !important;
+    }
+
+    .protected-recipe-container {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .watermark-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.08);
+        transform: rotate(-15deg);
+        user-select: none;
+        white-space: nowrap;
+        z-index: 10;
+        transition: transform 0.8s ease-in-out, color 0.8s ease-in-out;
+        line-height: 1.8;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .recipe-card-img-wrapper {
+        position: relative;
+        overflow: hidden;
+        border-radius: 12px;
+        margin-bottom: 12px;
+        border: 1px solid var(--glass-border);
+    }
+
+    .recipe-card-img {
+        width: 100%;
+        height: 180px;
+        object-fit: cover;
+        display: block;
+        -webkit-user-drag: none;
+        pointer-events: none;
+        transition: transform 0.3s ease;
+    }
+
+    .recipe-card-img-wrapper:hover .recipe-card-img {
+        transform: scale(1.03);
+    }
+
+    .clapperboard-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: rgba(12, 16, 23, 0.85);
+        border: 1px solid var(--neon-cyan);
+        color: #fff;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        cursor: pointer;
+        z-index: 5;
+        backdrop-filter: blur(6px);
+        box-shadow: 0 0 12px rgba(0, 242, 254, 0.3);
+        transition: all 0.2s ease;
+    }
+
+        .clapperboard-badge:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            transform: scale(1.05);
+        }
+
+    .recipe-grid-3-col {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 20px;
+    }
+
+    @@media (max-width: 850px) {
+        .recipe-grid-3-col {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @@media (max-width: 550px) {
+        .recipe-grid-3-col {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .video-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0, 0, 0, 0.88);
+        backdrop-filter: blur(10px);
+        z-index: 99999;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .video-modal-content {
+        position: relative;
+        width: 90%;
+        max-width: 850px;
+        background: rgba(12, 16, 23, 0.95);
+        border: 1px solid var(--neon-cyan);
+        border-radius: 16px;
+        padding: 25px;
+        box-shadow: 0 0 35px rgba(0, 242, 254, 0.25);
+    }
+</style>
+
+<div style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
+    <h1 style="text-align: center; color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 1px;">
+        Каталог эксклюзивных рецептов
+    </h1>
+    <p style="text-align: center; color: var(--text-muted); margin-bottom: 50px;">
+        Все посетители могут ознакомиться с меню. Для открытия технологии приготовления требуется активная подписка.
+    </p>
+
+    @foreach (var groupView in Model)
+    {
+        <div class="glass-panel group-subscription-block" data-base-price="@groupView.Group.PriceUah" data-group-id="@groupView.Group.Id" style="padding: 30px; margin-bottom: 40px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--glass-border); padding-bottom: 20px; margin-bottom: 25px; flex-wrap: wrap; gap: 20px;">
+                <div style="max-width: 550px;">
+                    <h2 style="margin: 0; color: var(--accent-sage);">@groupView.Group.Name</h2>
+                    <p style="margin: 5px 0 0 0; color: var(--text-muted); font-size: 0.9rem;">@groupView.Group.Description</p>
+                </div>
+
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 12px;">
+                    @if (groupView.HasAccess)
+                    {
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 8px 18px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; letter-spacing: 0.5px;">
+                            @(User.IsInRole("Admin") ? "✓ ДОСТУП АДМИНИСТРАТОРА" : $"✓ ОПЛАЧЕНО ДО {(groupView.ExpirationDate?.ToString("dd.MM.yyyy") ?? "30 дней")}")
+                        </span>
+                    }
+                    else
+                    {
+                        @if (User.Identity != null && User.Identity.IsAuthenticated)
+                        {
+                            <div style="background: rgba(0, 0, 0, 0.4); padding: 8px 12px; border-radius: 10px; border: 1px solid var(--glass-border); display: flex; gap: 10px; align-items: center;">
+                                <label style="font-size: 0.8rem; color: var(--text-muted); margin: 0; white-space: nowrap;">Период:</label>
+                                <select class="period-select" style="background: #0c1017; color: #fff; border: 1px solid var(--glass-border); border-radius: 6px; padding: 4px 8px; font-size: 0.82rem; cursor: pointer; outline: none;">
+                                    <option value="1" selected>1 месяц</option>
+                                    <option value="6">6 месяцев (-25%)</option>
+                                    <option value="12">12 месяцев (-50%)</option>
+                                </select>
+                            </div>
+
+                            <a href="/Payment/Checkout?groupId=@groupView.Group.Id&monthsPeriod=1" class="btn-futuristic checkout-group-btn" style="padding: 10px 22px; font-size: 0.9rem; text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+                                <span>Подписаться за</span>
+                                <span class="old-price-span" style="display: none; text-decoration: line-through; opacity: 0.6; font-size: 0.8rem;"></span>
+                                <span class="price-span" style="font-weight: bold; color: #10b981;">@groupView.Group.PriceUah</span> грн
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="/Identity/Account/Login?returnUrl=/" class="btn-futuristic" style="padding: 8px 18px; font-size: 0.85rem; text-decoration: none;">
+                                Войти для оплаты
+                            </a>
+                        }
+                    }
+                </div>
+            </div>
+
+            <div class="recipe-grid-3-col">
+                @foreach (var recipe in groupView.Recipes)
+                {
+                    <div class="glass-panel" style="padding: 16px; background: rgba(12, 16, 23, 0.6); display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div class="recipe-card-img-wrapper" style="@(!string.IsNullOrEmpty(recipe.VideoUrl) ? "cursor: pointer;" : "")"
+                                 onclick="@(!string.IsNullOrEmpty(recipe.VideoUrl) ? $"openVideoModal('{recipe.Title.Replace("'", "\\'")}', '{recipe.VideoUrl}')" : "")">
+
+                                @if (!string.IsNullOrEmpty(recipe.VideoUrl))
+                                {
+                                    <div class="clapperboard-badge" title="Смотреть видео-урок">
+                                        🎬 <span>ВИДЕО</span>
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrEmpty(recipe.ImageUrl))
+                                {
+                                    <img src="@recipe.ImageUrl" alt="@recipe.Title" class="recipe-card-img" />
+                                }
+                            </div>
+
+                            <h3 style="margin-top: 0; color: #ffffff; font-size: 1.05rem;">@recipe.Title</h3>
+                            <p style="color: var(--text-muted); font-size: 0.82rem; line-height: 1.4;">@recipe.Description</p>
+                        </div>
+
+                        <div>
+                            <hr style="border-color: var(--glass-border); margin: 12px 0;" />
+
+                            @if (groupView.HasAccess)
+                            {
+                                <div class="protected-recipe-container screenshot-protected"
+                                     oncopy="return false;"
+                                     oncut="return false;"
+                                     onpaste="return false;"
+                                     oncontextmenu="return false;"
+                                     onselectstart="return false;"
+                                     ondragstart="return false;"
+                                     style="font-size: 0.82rem;">
+
+                                    <div class="watermark-overlay">
+                                        <div>@(User.Identity?.Name ?? "NutriWeb License") • LICENSED CONTENT</div>
+                                        <div>DO NOT COPY • ALL RIGHTS RESERVED</div>
+                                        <div>NUTRIWEB LAB • PREVENT UNSANCTIONED USE</div>
+                                        <div>ACCOUNT ID: @(User.Identity?.Name ?? "GUEST_USER")</div>
+                                        <div>PROTECTED BY DRM & WATERMARK SYSTEM</div>
+                                    </div>
+
+                                    <h4 style="color: var(--accent-sage); margin-bottom: 4px; font-size: 0.85rem;">Ингредиенты и КБЖУ:</h4>
+                                    <p style="color: var(--text-primary); white-space: pre-line;">@recipe.Ingredients</p>
+
+                                    <h4 style="color: var(--accent-sage); margin-bottom: 4px; font-size: 0.85rem;">Технология приготовления:</h4>
+                                    <p style="color: var(--text-primary); white-space: pre-line;">@recipe.CookingSteps</p>
+                                </div>
+                            }
+                            else
+                            {
+                                <div style="text-align: center; padding: 15px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px dashed var(--glass-border);">
+                                    <span style="font-size: 1.3rem;">🔒</span>
+                                    <p style="color: var(--text-muted); font-size: 0.8rem; margin: 6px 0 0 0;">
+                                        Ингредиенты и технология доступны по подписке «@groupView.Group.Name».
+                                    </p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+<div id="videoModalOverlay" class="video-modal-overlay" onclick="closeVideoModalOnBackground(event)">
+    <div class="video-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 id="videoModalTitle" style="color: var(--neon-cyan); margin: 0; font-size: 1.15rem;">
+                🎬 Видео-урок приготовления
+            </h3>
+            <button onclick="closeVideoModal()" style="background: none; border: none; color: #fff; font-size: 1.8rem; cursor: pointer; line-height: 1;">
+                &times;
+            </button>
+        </div>
+
+        <div style="border-radius: 10px; overflow: hidden; background: #000; border: 1px solid var(--glass-border);">
+            <video id="modalVideoElement" controls controlsList="nodownload" style="width: 100%; max-height: 70vh; display: block;">
+                <source id="modalVideoSource" src="" type="video/mp4" />
+                Ваш браузер не поддерживает видео.
+            </video>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openVideoModal(title, videoUrl) {
+        const modal = document.getElementById('videoModalOverlay');
+        const video = document.getElementById('modalVideoElement');
+        const source = document.getElementById('modalVideoSource');
+        const modalTitle = document.getElementById('videoModalTitle');
+
+        modalTitle.innerText = '🎬 ' + title;
+        source.src = videoUrl;
+        video.load();
+        modal.style.display = 'flex';
+        video.play();
+    }
+
+    function closeVideoModal() {
+        const modal = document.getElementById('videoModalOverlay');
+        const video = document.getElementById('modalVideoElement');
+        video.pause();
+        modal.style.display = 'none';
+    }
+
+    function closeVideoModalOnBackground(e) {
+        if (e.target.id === 'videoModalOverlay') {
+            closeVideoModal();
+        }
+    }
+
+    // ЗАЩИТА СНИМКОВ И DRM
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); return false; });
+    document.addEventListener('selectstart', function (e) { e.preventDefault(); return false; });
+    document.addEventListener('copy', function (e) { e.preventDefault(); return false; });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'C' ||
+            e.key === 'a' || e.key === 'A' ||
+            e.key === 'x' || e.key === 'X' ||
+            e.key === 'p' || e.key === 'P' ||
+            e.key === 'u' || e.key === 'U') ||
+            e.key === 'F12') {
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Динамический пересчет цен в шапке группы при выборе периода подписки
+        const groupBlocks = document.querySelectorAll('.group-subscription-block');
+
+        groupBlocks.forEach(block => {
+            const basePrice = parseFloat(block.dataset.basePrice) || 0;
+            const groupId = block.dataset.groupId;
+            const select = block.querySelector('.period-select');
+            const priceSpan = block.querySelector('.price-span');
+            const oldPriceSpan = block.querySelector('.old-price-span');
+            const mainCheckoutBtn = block.querySelector('.checkout-group-btn');
+
+            if (select) {
+                select.addEventListener('change', function () {
+                    const months = parseInt(this.value);
+                    let discount = 0;
+
+                    if (months === 6) discount = 0.25;
+                    else if (months === 12) discount = 0.50;
+
+                    const fullPrice = basePrice * months;
+                    const finalPrice = Math.round(fullPrice * (1 - discount));
+
+                    if (priceSpan) priceSpan.textContent = finalPrice.toLocaleString();
+
+                    if (oldPriceSpan) {
+                        if (discount > 0) {
+                            oldPriceSpan.textContent = `${fullPrice.toLocaleString()} грн`;
+                            oldPriceSpan.style.display = 'inline';
+                        } else {
+                            oldPriceSpan.style.display = 'none';
+                        }
+                    }
+
+                    const newUrl = `/Payment/Checkout?groupId=${groupId}&monthsPeriod=${months}`;
+
+                    if (mainCheckoutBtn) mainCheckoutBtn.href = newUrl;
+                });
+            }
+        });
+
+        // Работа системы защиты скриншотов и скрытия контента
+        const targets = document.querySelectorAll('.screenshot-protected');
+        const watermarks = document.querySelectorAll('.watermark-overlay');
+
+        function hideContent() {
+            targets.forEach(el => el.classList.add('blurred'));
+        }
+
+        function showContent() {
+            targets.forEach(el => el.classList.remove('blurred'));
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.key === 'S' || e.key === 's' || e.code === 'KeyS') && e.shiftKey && (e.metaKey || e.ctrlKey)) {
+                hideContent();
+            }
+            if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
+                hideContent();
+            }
+        });
+
+        document.addEventListener('keyup', function (e) {
+            if (e.key === 'Meta' || e.key === 'Win' || e.key === 'PrintScreen') {
+                hideContent();
+                setTimeout(showContent, 2000);
+            }
+        });
+
+        window.addEventListener('blur', hideContent);
+        window.addEventListener('focus', showContent);
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) hideContent();
+            else showContent();
+        });
+
+        setInterval(function () {
+            watermarks.forEach(wm => {
+                const randomX = Math.floor(Math.random() * 20) - 10;
+                const randomY = Math.floor(Math.random() * 20) - 10;
+                const randomOpacity = (Math.random() * 0.06 + 0.05).toFixed(2);
+
+                wm.style.transform = `translate(${randomX}px, ${randomY}px) rotate(-15deg)`;
+                wm.style.color = `rgba(255, 255, 255, ${randomOpacity})`;
+            });
+        }, 3500);
+    });
+</script>

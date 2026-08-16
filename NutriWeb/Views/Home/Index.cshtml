@@ -1,0 +1,219 @@
+﻿@{
+    ViewData["Title"] = "Здоровое питание будущего";
+    var activeSubs = ViewBag.ActiveSubscriptions as Dictionary<int, DateTime> ?? new Dictionary<int, DateTime>();
+}
+
+<!-- ГЛАВНЫЙ БАННЕР (HERO SECTION) -->
+<div style="text-align: center; padding: 70px 20px 40px 20px; max-width: 900px; margin: 0 auto;">
+    <h1 style="font-size: 2.8rem; font-weight: 800; line-height: 1.2; background: linear-gradient(135deg, #fff 0%, var(--accent-sage) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px;">
+        Технологии здоровья & Уют традиционной кухни
+    </h1>
+    <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; margin-bottom: 35px;">
+        Персональный био-гид по питанию без глютена, сахара и лактозы. Авторские рецепты, рассчитанные на основе клеточной нутрициологии.
+    </p>
+    <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+        <a href="/recipes/free" class="btn-futuristic" style="padding: 12px 28px; font-weight: bold; text-decoration: none;">
+            Смотреть бесплатные рецепты
+        </a>
+        <a href="#tariffs" class="btn-futuristic" style="padding: 12px 28px; background: transparent; border: 1px solid var(--glass-border); text-decoration: none;">
+            Тарифные планы
+        </a>
+    </div>
+</div>
+
+<!-- СЕКЦИЯ ПРЕИМУЩЕСТВ -->
+<div style="max-width: 1100px; margin: 50px auto; padding: 0 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 25px;">
+    <div class="glass-panel" style="padding: 25px; text-align: left;">
+        <div style="font-size: 2rem; margin-bottom: 10px;">01.</div>
+        <h3 style="color: var(--accent-sage); margin-top: 0;">Открытая база</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">Бесплатные рецепты доступны сразу всем гостям без обязательной регистрации.</p>
+    </div>
+    <div class="glass-panel" style="padding: 25px; text-align: left;">
+        <div style="font-size: 2rem; margin-bottom: 10px;">02.</div>
+        <h3 style="color: var(--accent-sage); margin-top: 0;">Нутрициологический разбор</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">Каждая инструкция снабжена подробным расчетом КБЖУ и пользы для метаболизма.</p>
+    </div>
+    <div class="glass-panel" style="padding: 25px; text-align: left;">
+        <div style="font-size: 2rem; margin-bottom: 10px;">03.</div>
+        <h3 style="color: var(--accent-sage); margin-top: 0;">Премиум подписки</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; line-height: 1.5;">Возможность разблокировать эксклюзивные узкоспециализированные рационы в 1 клик.</p>
+    </div>
+</div>
+
+<!-- СЕКЦИЯ ТАРИФНЫХ ПЛАНОВ (3 ТАРИФА) -->
+<div id="tariffs" style="max-width: 1200px; margin: 80px auto; padding: 0 20px;">
+    <h2 style="text-align: center; color: var(--neon-cyan); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 40px;">
+        Тарифные планы
+    </h2>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 25px;">
+
+        <!-- ТАРИФ 1 -->
+        <div class="glass-panel tariff-card" data-base-price="450" style="padding: 30px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; background: rgba(12, 16, 23, 0.75);">
+            <div>
+                <h3 style="color: var(--accent-sage); font-size: 1.3rem; margin-top: 0;">Чистое питание</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; min-height: 40px; margin-bottom: 15px;">Базовые блюда, супы, горячее и авторские соусы</p>
+
+                <div style="font-size: 2rem; font-weight: bold; color: #10b981; margin: 15px 0;">
+                    <span class="old-price" style="display: none; font-size: 1.1rem; color: var(--text-muted); text-decoration: line-through; margin-right: 8px;"></span>
+                    <span class="final-price">450</span> <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">грн</span>
+                </div>
+
+                <div style="margin-bottom: 20px; text-align: left; background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_1" value="1" checked class="period-radio" style="margin-right: 6px;"> 1 месяц</span>
+                        <span style="color: var(--text-muted);">Без скидки</span>
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_1" value="6" class="period-radio" style="margin-right: 6px;"> 6 месяцев</span>
+                        <span style="color: #10b981; font-weight: bold;">-25%</span>
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_1" value="12" class="period-radio" style="margin-right: 6px;"> 12 месяцев</span>
+                        <span style="color: #ef4444; font-weight: bold;">-50%</span>
+                    </label>
+                </div>
+            </div>
+
+            @if (activeSubs.ContainsKey(1))
+            {
+                <div style="margin-top: 20px; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold;">
+                    ✓ ОПЛАЧЕНО ДО @activeSubs[1].ToString("dd.MM.yyyy")
+                </div>
+            }
+            else
+            {
+                <a href="/Payment/Checkout?groupId=1&monthsPeriod=1" class="btn-futuristic checkout-btn" style="text-decoration: none; display: block; padding: 10px; margin-top: 20px;">
+                    Выбрать тариф
+                </a>
+            }
+        </div>
+
+        <!-- ТАРИФ 2 -->
+        <div class="glass-panel tariff-card" data-base-price="650" style="padding: 30px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; background: rgba(12, 16, 23, 0.75); border: 1px solid var(--neon-cyan);">
+            <div>
+                <span style="background: var(--neon-cyan); color: #000; font-size: 0.7rem; font-weight: bold; padding: 3px 10px; border-radius: 10px; text-transform: uppercase;">Популярный</span>
+                <h3 style="color: var(--accent-sage); font-size: 1.3rem; margin-top: 10px;">Живое тесто & Сладкое</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; min-height: 40px; margin-bottom: 15px;">Безглютеновый хлеб, полезная выпечка и десерты</p>
+
+                <div style="font-size: 2rem; font-weight: bold; color: #10b981; margin: 15px 0;">
+                    <span class="old-price" style="display: none; font-size: 1.1rem; color: var(--text-muted); text-decoration: line-through; margin-right: 8px;"></span>
+                    <span class="final-price">650</span> <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">грн</span>
+                </div>
+
+                <div style="margin-bottom: 20px; text-align: left; background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_2" value="1" checked class="period-radio" style="margin-right: 6px;"> 1 месяц</span>
+                        <span style="color: var(--text-muted);">Без скидки</span>
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_2" value="6" class="period-radio" style="margin-right: 6px;"> 6 месяцев</span>
+                        <span style="color: #10b981; font-weight: bold;">-25%</span>
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_2" value="12" class="period-radio" style="margin-right: 6px;"> 12 месяцев</span>
+                        <span style="color: #ef4444; font-weight: bold;">-50%</span>
+                    </label>
+                </div>
+            </div>
+
+            @if (activeSubs.ContainsKey(2))
+            {
+                <div style="margin-top: 20px; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold;">
+                    ✓ ОПЛАЧЕНО ДО @activeSubs[2].ToString("dd.MM.yyyy")
+                </div>
+            }
+            else
+            {
+                <a href="/Payment/Checkout?groupId=2&monthsPeriod=1" class="btn-futuristic checkout-btn" style="text-decoration: none; display: block; padding: 10px; margin-top: 20px;">
+                    Выбрать тариф
+                </a>
+            }
+        </div>
+
+        <!-- ТАРИФ 3 -->
+        <div class="glass-panel tariff-card" data-base-price="350" style="padding: 30px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; background: rgba(12, 16, 23, 0.75);">
+            <div>
+                <h3 style="color: var(--accent-sage); font-size: 1.3rem; margin-top: 0;">Суперфуды & Смузи</h3>
+                <p style="color: var(--text-muted); font-size: 0.85rem; min-height: 40px; margin-bottom: 15px;">Детокс-напитки, витаминные боулы и эликсиры</p>
+
+                <div style="font-size: 2rem; font-weight: bold; color: #10b981; margin: 15px 0;">
+                    <span class="old-price" style="display: none; font-size: 1.1rem; color: var(--text-muted); text-decoration: line-through; margin-right: 8px;"></span>
+                    <span class="final-price">350</span> <span style="font-size: 0.9rem; color: var(--text-muted); font-weight: normal;">грн</span>
+                </div>
+
+                <div style="margin-bottom: 20px; text-align: left; background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_3" value="1" checked class="period-radio" style="margin-right: 6px;"> 1 месяц</span>
+                        <span style="color: var(--text-muted);">Без скидки</span>
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_3" value="6" class="period-radio" style="margin-right: 6px;"> 6 месяцев</span>
+                        <span style="color: #10b981; font-weight: bold;">-25%</span>
+                    </label>
+                    <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; color: #fff; font-size: 0.85rem;">
+                        <span><input type="radio" name="period_3" value="12" class="period-radio" style="margin-right: 6px;"> 12 месяцев</span>
+                        <span style="color: #ef4444; font-weight: bold;">-50%</span>
+                    </label>
+                </div>
+            </div>
+
+            @if (activeSubs.ContainsKey(3))
+            {
+                <div style="margin-top: 20px; background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 10px; border-radius: 8px; font-size: 0.85rem; font-weight: bold;">
+                    ✓ ОПЛАЧЕНО ДО @activeSubs[3].ToString("dd.MM.yyyy")
+                </div>
+            }
+            else
+            {
+                <a href="/Payment/Checkout?groupId=3&monthsPeriod=1" class="btn-futuristic checkout-btn" style="text-decoration: none; display: block; padding: 10px; margin-top: 20px;">
+                    Выбрать тариф
+                </a>
+            }
+        </div>
+
+    </div>
+</div>
+
+<!-- Скрипт пересчета цен и динамической подстановки параметров в ссылку оплаты -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const cards = document.querySelectorAll('.tariff-card');
+
+        cards.forEach(card => {
+            const basePrice = parseFloat(card.dataset.basePrice) || 0;
+            const radios = card.querySelectorAll('.period-radio');
+            const finalPriceEl = card.querySelector('.final-price');
+            const oldPriceEl = card.querySelector('.old-price');
+            const checkoutBtn = card.querySelector('.checkout-btn');
+
+            radios.forEach(radio => {
+                radio.addEventListener('change', function () {
+                    const months = parseInt(this.value);
+                    let discount = 0;
+
+                    if (months === 6) discount = 0.25;
+                    else if (months === 12) discount = 0.50;
+
+                    const fullPrice = basePrice * months;
+                    const finalPrice = Math.round(fullPrice * (1 - discount));
+
+                    finalPriceEl.textContent = finalPrice.toLocaleString();
+
+                    if (discount > 0) {
+                        oldPriceEl.textContent = `${fullPrice.toLocaleString()} грн`;
+                        oldPriceEl.style.display = 'inline';
+                    } else {
+                        oldPriceEl.style.display = 'none';
+                    }
+
+                    if (checkoutBtn) {
+                        const currentHref = new URL(checkoutBtn.href, window.location.origin);
+                        currentHref.searchParams.set('monthsPeriod', months);
+                        checkoutBtn.href = currentHref.pathname + currentHref.search;
+                    }
+                });
+            });
+        });
+    });
+</script>

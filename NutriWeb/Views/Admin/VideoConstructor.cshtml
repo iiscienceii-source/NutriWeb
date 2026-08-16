@@ -1,0 +1,367 @@
+﻿@using NutriWeb.Models
+@using NutriWeb.Controllers
+@{
+    ViewData["Title"] = "Панель администратора";
+    var recipes = ViewBag.Recipes as List<Recipe> ?? new List<Recipe>();
+    var userSubs = ViewBag.UserSubscriptions as List<AdminUserSubscriptionViewModel> ?? new List<AdminUserSubscriptionViewModel>();
+    var searchEmail = ViewBag.SearchEmail as string;
+}
+
+<style>
+    .upload-zone {
+        border: 2px dashed var(--neon-cyan);
+        border-radius: 16px;
+        padding: 30px 20px;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.3);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+        .upload-zone:hover, .upload-zone.dragover {
+            background: rgba(16, 185, 129, 0.1);
+            border-color: #10b981;
+        }
+
+    .video-preview-container {
+        width: 100%;
+        max-height: 300px;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        display: none;
+        border: 1px solid var(--glass-border);
+        margin-top: 15px;
+    }
+
+    video {
+        width: 100%;
+        max-height: 300px;
+        display: block;
+    }
+
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+    }
+
+        .admin-table th, .admin-table td {
+            padding: 12px;
+            border-bottom: 1px solid var(--glass-border);
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+    .admin-input {
+        padding: 10px 14px;
+        background: rgba(0,0,0,0.5);
+        border: 1px solid var(--glass-border);
+        border-radius: 8px;
+        color: #fff;
+        outline: none;
+        font-size: 0.9rem;
+    }
+</style>
+
+<div style="max-width: 1100px; margin: 40px auto; padding: 0 20px;">
+
+    <!-- СИСТЕМНЫЕ УВЕДОМЛЕНИЯ -->
+    @if (TempData["Error"] != null)
+    {
+        <div style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+            ❌ @TempData["Error"]
+        </div>
+    }
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 0.9rem;">
+            ✔ @TempData["Success"]
+        </div>
+    }
+
+    <!-- БЛОК 1: УПРАВЛЕНИЕ ПОДПИСКАМИ И АККАУНТАМИ ПОЛЬЗОВАТЕЛЕЙ -->
+    <div class="glass-panel" style="padding: 30px; background: rgba(12, 16, 23, 0.85); margin-bottom: 35px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <span style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; padding: 4px 12px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">
+                    Управление клиентами
+                </span>
+                <h2 style="color: var(--neon-cyan); margin: 8px 0 0 0; font-size: 1.5rem; text-transform: uppercase;">
+                    Выдача подписок и удаление пользователей
+                </h2>
+            </div>
+            <a href="/recipes/paid" class="btn-futuristic" style="padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
+                ← В каталог
+            </a>
+        </div>
+
+        <!-- ФОРМА УПРАВЛЕНИЯ ПОДПИСКОЙ ПО ЛОГИНУ -->
+        <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 25px;">
+            <h4 style="color: var(--accent-sage); margin: 0 0 15px 0; font-size: 1rem;">
+                Операция над подпиской пользователя:
+            </h4>
+
+            <div style="display: grid; grid-template-columns: 2fr 1.5fr 1fr 1fr; gap: 12px; align-items: center;">
+                <input type="email" id="targetUserEmail" placeholder="Логин / Email пользователя" class="admin-input" value="@searchEmail" />
+
+                <select id="targetPriceGroup" class="admin-input">
+                    <option value="1">1. Чистое питание (450 грн)</option>
+                    <option value="2">2. Живое тесто & Сладкое (650 грн)</option>
+                    <option value="3">3. Суперфуды & Смузи (350 грн)</option>
+                </select>
+
+                <form asp-action="GrantSubscription" method="post" onsubmit="return fillGrantForm(this)">
+                    <input type="hidden" name="userEmail" class="grant-email" />
+                    <input type="hidden" name="priceGroupId" class="grant-group" />
+                    <input type="hidden" name="days" value="30" />
+                    <button type="submit" class="btn-futuristic" style="width: 100%; padding: 10px; font-size: 0.82rem; background: rgba(16, 185, 129, 0.2); border-color: #10b981; color: #10b981;">
+                        ✓ Выдать / Восстановить
+                    </button>
+                </form>
+
+                <form asp-action="RevokeSubscription" method="post" onsubmit="return fillRevokeForm(this)">
+                    <input type="hidden" name="userEmail" class="revoke-email" />
+                    <input type="hidden" name="priceGroupId" class="revoke-group" />
+                    <button type="submit" class="btn-futuristic" style="width: 100%; padding: 10px; font-size: 0.82rem; background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444;" onclick="return confirm('Аннулировать подписку выбранного пользователя?')">
+                        🚫 Аннулировать
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ТАБЛИЦА СТАТУСОВ ПОДПИСОК И ДЕЙСТВИЙ -->
+        <h4 style="color: var(--accent-sage); margin-top: 0; font-size: 1.1rem;">
+            Список зарегистрированных аккаунтов
+        </h4>
+
+        <form method="get" asp-action="VideoConstructor" style="margin-bottom: 15px; display: flex; gap: 10px;">
+            <input type="text" name="searchEmail" placeholder="Поиск по email..." value="@searchEmail" class="admin-input" style="width: 300px;" />
+            <button type="submit" class="btn-futuristic" style="padding: 8px 16px;">Найти</button>
+            @if (!string.IsNullOrEmpty(searchEmail))
+            {
+                <a href="/Admin/VideoConstructor" class="btn-futuristic" style="padding: 8px 16px; text-decoration: none; background: rgba(255,255,255,0.1);">Сброс</a>
+            }
+        </form>
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>Email / Логин</th>
+                    <th>Активные подписки</th>
+                    <th style="text-align: right;">Действия над аккаунтом</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in userSubs)
+                {
+                    bool isSelf = string.Equals(u.Email, User.Identity?.Name, StringComparison.OrdinalIgnoreCase);
+
+                    <tr>
+                        <td style="color: #fff; font-weight: bold;">
+                            @u.Email
+                            @if (isSelf)
+                            {
+                                <span style="background: rgba(0, 242, 254, 0.2); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin-left: 8px;">
+                                    Вы
+                                </span>
+                            }
+                        </td>
+                        <td>
+                            @if (u.ActiveSubscriptions.Any())
+                            {
+                                foreach (var sub in u.ActiveSubscriptions)
+                                {
+                                    <span style="display: inline-block; background: rgba(16, 185, 129, 0.2); border: 1px solid #10b981; color: #10b981; padding: 2px 8px; border-radius: 12px; font-size: 0.78rem; margin-right: 5px;">
+                                        Категория #@sub.PriceGroupId (до @sub.ExpirationDate.ToString("dd.MM.yyyy"))
+                                    </span>
+                                }
+                            }
+                            else
+                            {
+                                <span style="color: var(--text-muted);">— Нет активных подписок</span>
+                            }
+                        </td>
+                        <td style="text-align: right; display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                            @if (!isSelf)
+                            {
+                                <button onclick="selectUserForSub('@u.Email')" class="btn-futuristic" style="padding: 4px 10px; font-size: 0.78rem;">
+                                    Выбрать
+                                </button>
+
+                                <form asp-action="DeleteUser" method="post" style="display: inline;">
+                                    <input type="hidden" name="userId" value="@u.UserId" />
+                                    <button type="submit" class="btn-futuristic" style="padding: 4px 10px; font-size: 0.78rem; background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444;" onclick="return confirm('Вы действительно хотите полностью удалить аккаунт «@u.Email»? Данное действие нельзя отменить.');">
+                                        ❌ Удалить
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">
+                                    Текущий администратор
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- БЛОК 2: ЗАГРУЗКА И УДАЛЕНИЕ ВИДЕО -->
+    <div class="glass-panel" style="padding: 30px; background: rgba(12, 16, 23, 0.85);">
+        <h2 style="color: var(--neon-cyan); margin: 0 0 20px 0; font-size: 1.5rem; text-transform: uppercase;">
+            Загрузка видео к рецептам
+        </h2>
+
+        <form asp-action="UploadVideo" method="post" enctype="multipart/form-data">
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--accent-sage); margin-bottom: 8px; font-size: 0.9rem;">
+                    1. Выберите рецепт:
+                </label>
+                <select name="recipeId" class="admin-input" style="width: 100%;" required>
+                    @foreach (var r in recipes)
+                    {
+                        <option value="@r.Id">@r.Title @(!string.IsNullOrEmpty(r.VideoUrl) ? " (🎬 Есть видео)" : "")</option>
+                    }
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; color: var(--accent-sage); margin-bottom: 8px; font-size: 0.9rem;">
+                    2. Выберите видеофайл (MP4 / WEBM / MOV):
+                </label>
+
+                <div class="upload-zone" id="dropZone" onclick="document.getElementById('videoFileInput').click();">
+                    <div style="font-size: 2rem; margin-bottom: 5px;">📹</div>
+                    <div style="color: #fff; font-weight: bold; margin-bottom: 5px;" id="uploadTitle">
+                        Перетащите сюда файл или нажмите для выбора
+                    </div>
+                    <input type="file" id="videoFileInput" name="videoFile" accept="video/mp4,video/webm,video/mov" style="display: none;" onchange="handleFileSelect(this.files)" />
+                </div>
+            </div>
+
+            <div class="video-preview-container" id="previewContainer">
+                <video id="videoPreview" controls controlsList="nodownload"></video>
+            </div>
+
+            <button type="submit" class="btn-futuristic" style="width: 100%; padding: 12px; margin-top: 20px; font-size: 1rem; font-weight: bold;">
+                💾 Загрузить / Обновить видео
+            </button>
+        </form>
+
+        <hr style="border-color: var(--glass-border); margin: 30px 0;" />
+
+        <h3 style="color: var(--accent-sage); margin-top: 0; font-size: 1.2rem;">
+            Прикрепленные видеофайлы
+        </h3>
+
+        <table class="admin-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название рецепта</th>
+                    <th>Статус видео</th>
+                    <th style="text-align: right;">Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in recipes)
+                {
+                    <tr>
+                        <td>#@r.Id</td>
+                        <td style="color: #fff; font-weight: 500;">@r.Title</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(r.VideoUrl))
+                            {
+                                <span style="color: #10b981; font-weight: bold;">🎬 Прикреплено</span>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">@r.VideoUrl</div>
+                            }
+                            else
+                            {
+                                <span style="color: var(--text-muted);">— Нет видео</span>
+                            }
+                        </td>
+                        <td style="text-align: right;">
+                            @if (!string.IsNullOrEmpty(r.VideoUrl))
+                            {
+                                <form asp-action="DeleteVideo" method="post" style="display: inline;">
+                                    <input type="hidden" name="recipeId" value="@r.Id" />
+                                    <button type="submit" onclick="return confirm('Удалить видео у рецепта «@r.Title»?');"
+                                            style="background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #ef4444; padding: 5px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer;">
+                                        🗑 Удалить видео
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function selectUserForSub(email) {
+        document.getElementById('targetUserEmail').value = email;
+    }
+
+    function fillGrantForm(form) {
+        const email = document.getElementById('targetUserEmail').value;
+        const group = document.getElementById('targetPriceGroup').value;
+        if (!email) {
+            alert('Укажите email пользователя!');
+            return false;
+        }
+        form.querySelector('.grant-email').value = email;
+        form.querySelector('.grant-group').value = group;
+        return true;
+    }
+
+    function fillRevokeForm(form) {
+        const email = document.getElementById('targetUserEmail').value;
+        const group = document.getElementById('targetPriceGroup').value;
+        if (!email) {
+            alert('Укажите email пользователя!');
+            return false;
+        }
+        form.querySelector('.revoke-email').value = email;
+        form.querySelector('.revoke-group').value = group;
+        return true;
+    }
+
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('videoFileInput');
+    const previewContainer = document.getElementById('previewContainer');
+    const videoPreview = document.getElementById('videoPreview');
+    const uploadTitle = document.getElementById('uploadTitle');
+
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, e => { e.preventDefault(); e.stopPropagation(); }, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.classList.add('dragover');
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+        const files = e.dataTransfer.files;
+        fileInput.files = files;
+        handleFileSelect(files);
+    });
+
+    function handleFileSelect(files) {
+        if (files && files[0]) {
+            const file = files[0];
+            uploadTitle.innerText = `Выбран файл: ${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+            videoPreview.src = URL.createObjectURL(file);
+            previewContainer.style.display = 'block';
+        }
+    }
+</script>

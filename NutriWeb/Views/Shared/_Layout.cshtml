@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - NutriWeb</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/NutriWeb.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/theme.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="glass-panel" style="margin: 15px 20px; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-radius: 16px;">
+            <!-- ЛОГОТИП -->
+            <div style="display: flex; align-items: center; gap: 20px;">
+                <a href="/" style="font-size: 1.5rem; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: 1px;">
+                    NUTRITION.LAB
+                </a>
+            </div>
+
+            <!-- НАВИГАЦИОННОЕ МЕНЮ -->
+            <div style="display: flex; gap: 25px; align-items: center;">
+                <a href="/recipes/free" style="color: var(--text-primary, #fff); text-decoration: none; font-size: 0.95rem;">Бесплатные рецепты</a>
+                <a href="/recipes/paid" style="color: var(--text-primary, #fff); text-decoration: none; font-size: 0.95rem;">Платные рецепты</a>
+                <a href="/#tariffs" style="color: var(--text-primary, #fff); text-decoration: none; font-size: 0.95rem;">Тарифы</a>
+            </div>
+
+            <!-- ДИНАМИЧЕСКАЯ КНОПКА "ЛИЧНЫЙ КАБИНЕТ" / "ВОЙТИ" -->
+            <div>
+                @if (User.Identity != null && User.Identity.IsAuthenticated)
+                {
+                    <a href="/Account/Profile" class="btn-futuristic" style="padding: 8px 20px; font-size: 0.88rem; text-decoration: none;">
+                        Личный кабинет
+                    </a>
+                }
+                else
+                {
+                    <a href="/Identity/Account/Login?returnUrl=/" class="btn-futuristic" style="padding: 8px 20px; font-size: 0.88rem; text-decoration: none;">
+                        Войти в аккаунт
+                    </a>
+                }
+            </div>
+        </nav>
+    </header>
+
+    <div class="container-fluid">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="border-top footer text-muted text-center py-3" style="border-color: var(--glass-border) !important; margin-top: 50px;">
+        <div class="container">
+            &copy; 2026 - NutriWeb - <a asp-area="" asp-controller="Home" asp-action="Privacy" style="color: var(--text-muted);">Privacy</a>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

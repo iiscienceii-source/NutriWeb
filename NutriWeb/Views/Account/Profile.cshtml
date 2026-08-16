@@ -1,0 +1,103 @@
+﻿@using NutriWeb.Controllers
+@model UserProfileViewModel
+@{
+    ViewData["Title"] = "Личный кабинет";
+}
+
+<div style="max-width: 800px; margin: 40px auto; padding: 0 20px;">
+    <div class="glass-panel" style="padding: 35px; background: rgba(12, 16, 23, 0.85);">
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; border-bottom: 1px solid var(--glass-border); padding-bottom: 15px;">
+            <div>
+                <h1 style="color: #fff; margin: 0; font-size: 1.8rem;">Личный кабинет</h1>
+                <p style="color: var(--text-muted); margin: 5px 0 0 0; font-size: 0.9rem;">
+                    Пользователь: <strong style="color: var(--neon-cyan);">@Model.User.Email</strong>
+                </p>
+            </div>
+
+            <form asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home")" method="post">
+                <button type="submit" class="btn-futuristic" style="background: rgba(239, 68, 68, 0.2); border-color: #ef4444; color: #ef4444; padding: 8px 16px; font-size: 0.85rem;">
+                    Выйти из аккаунта
+                </button>
+            </form>
+        </div>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div style="margin-bottom: 30px; padding: 20px; border: 1px solid var(--neon-cyan); border-radius: 12px; background: rgba(0, 242, 254, 0.05);">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <span style="background: var(--neon-cyan); color: #000; font-size: 0.7rem; font-weight: bold; padding: 3px 10px; border-radius: 10px; text-transform: uppercase;">
+                            Права администратора
+                        </span>
+                        <h3 style="color: #fff; margin: 8px 0 4px 0; font-size: 1.2rem;">Панель управления</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin: 0;">
+                            Загрузка видео, управление подписками и аккаунтами пользователей.
+                        </p>
+                    </div>
+                    <a href="/Admin/VideoConstructor" class="btn-futuristic" style="padding: 10px 20px; text-decoration: none; font-weight: bold;">
+                        🎬 Админ-панель
+                    </a>
+                </div>
+            </div>
+        }
+
+        <h3 style="color: var(--accent-sage); margin-top: 0; font-size: 1.2rem;">Мои активные подписки</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
+            Управление активными тарифами и доступом к платной базе рецептов.
+        </p>
+
+        @if (Model.ActiveSubscriptions.Any())
+        {
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                @foreach (var sub in Model.ActiveSubscriptions)
+                {
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 12px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="color: #10b981; font-weight: bold; font-size: 0.8rem; text-transform: uppercase;">
+                                    ✓ Активна
+                                </span>
+                                @{
+                                    var monthsProp = sub.GetType().GetProperty("MonthsPeriod");
+                                    int monthsVal = monthsProp != null ? (int)(monthsProp.GetValue(sub) ?? 1) : 1;
+                                }
+                                @if (monthsVal > 1)
+                                {
+                                    <span style="background: rgba(16, 185, 129, 0.25); color: #10b981; font-size: 0.7rem; font-weight: bold; padding: 2px 7px; border-radius: 8px;">
+                                        @(monthsVal == 6 ? "6 мес. (-25%)" : "12 мес. (-50%)")
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span style="background: rgba(255, 255, 255, 0.1); color: var(--text-muted); font-size: 0.7rem; padding: 2px 7px; border-radius: 8px;">
+                                        1 мес.
+                                    </span>
+                                }
+                            </div>
+                            <div style="color: #fff; font-weight: bold; font-size: 1.05rem; margin-bottom: 6px;">
+                                @sub.GroupName
+                            </div>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.8rem; margin-top: 10px;">
+                            Действует до: <strong style="color: #fff;">@sub.ExpirationDate.ToString("dd.MM.yyyy")</strong>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div style="padding: 20px; background: rgba(0,0,0,0.3); border-radius: 12px; border: 1px dashed var(--glass-border); text-align: center; margin-bottom: 25px;">
+                <span style="font-size: 1.5rem;">🔒</span>
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin: 8px 0 0 0;">
+                    У вас пока нет активных подписок.
+                </p>
+            </div>
+        }
+
+        <a href="/recipes/paid" class="btn-futuristic" style="display: inline-block; padding: 10px 20px; text-decoration: none;">
+            Перейти к платным рецептам →
+        </a>
+    </div>
+</div>

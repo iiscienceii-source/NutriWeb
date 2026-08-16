@@ -1,0 +1,53 @@
+﻿@model NutriWeb.Models.RegisterViewModel
+@{
+    ViewData["Title"] = "Регистрация";
+}
+
+<div style="max-width: 450px; margin: 60px auto; padding: 0 20px;">
+    <div class="glass-panel" style="padding: 35px; background: rgba(12, 16, 23, 0.7);">
+        <h2 style="text-align: center; color: var(--neon-cyan); margin-top: 0; text-transform: uppercase; letter-spacing: 1px;">
+            Регистрация
+        </h2>
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;">
+            Создайте аккаунт для оформления доступа к рецептам
+        </p>
+
+        <form asp-action="Register" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+            <div asp-validation-summary="All" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 15px;"></div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Имя и Фамилия</label>
+                <input asp-for="FullName" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" placeholder="Иван Иванов" />
+                <span asp-validation-for="FullName" style="color: #ef4444; font-size: 0.8rem;"></span>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Email адрес</label>
+                <input asp-for="Email" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" placeholder="name@domain.com" />
+                <span asp-validation-for="Email" style="color: #ef4444; font-size: 0.8rem;"></span>
+            </div>
+
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Пароль</label>
+                <input asp-for="Password" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" />
+                <span asp-validation-for="Password" style="color: #ef4444; font-size: 0.8rem;"></span>
+            </div>
+
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; color: var(--accent-sage); margin-bottom: 6px; font-size: 0.85rem;">Подтверждение пароля</label>
+                <input asp-for="ConfirmPassword" style="width: 100%; padding: 10px 14px; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; outline: none;" />
+                <span asp-validation-for="ConfirmPassword" style="color: #ef4444; font-size: 0.8rem;"></span>
+            </div>
+
+            <button type="submit" class="btn-futuristic" style="width: 100%; padding: 12px; font-size: 0.95rem; font-weight: bold;">
+                Зарегистрироваться
+            </button>
+        </form>
+
+        <hr style="border-color: var(--glass-border); margin: 25px 0;" />
+
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin: 0;">
+            Уже есть аккаунт? <a asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" style="color: var(--neon-cyan); text-decoration: none;">Войти</a>
+        </p>
+    </div>
+</div>

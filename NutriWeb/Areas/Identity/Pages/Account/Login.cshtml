@@ -1,0 +1,63 @@
+﻿@page
+@model NutriWeb.Areas.Identity.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Вход в аккаунт";
+}
+
+<div style="max-width: 450px; margin: 60px auto; padding: 0 20px;">
+    <div class="glass-panel" style="padding: 40px 30px; background: rgba(12, 16, 23, 0.85); border-radius: 16px; border: 1px solid var(--glass-border);">
+
+        <h2 style="color: var(--neon-cyan); text-align: center; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-size: 1.6rem;">
+            Авторизация
+        </h2>
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.88rem; margin-bottom: 30px;">
+            Введите данные для входа в систему NutriWeb
+        </p>
+
+        <form id="account" method="post">
+            <div asp-validation-summary="ModelOnly" style="color: #ef4444; font-size: 0.85rem; margin-bottom: 15px;" role="alert"></div>
+
+            <div style="margin-bottom: 20px;">
+                <label asp-for="Input.Email" style="display: block; color: var(--accent-sage); font-size: 0.85rem; margin-bottom: 6px;">Email / Логин</label>
+                <input asp-for="Input.Email" class="form-control" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; border-radius: 8px; padding: 10px 14px; outline: none;" placeholder="user@example.com" autocomplete="username" aria-required="true" />
+                <span asp-validation-for="Input.Email" style="color: #ef4444; font-size: 0.78rem;"></span>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label asp-for="Input.Password" style="color: var(--accent-sage); font-size: 0.85rem; margin: 0;">Пароль</label>
+                    <a href="/Identity/Account/ForgotPassword" style="color: var(--neon-cyan); font-size: 0.78rem; text-decoration: none;">
+                        Забыли пароль?
+                    </a>
+                </div>
+                <input asp-for="Input.Password" type="password" class="form-control" style="background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border); color: #fff; border-radius: 8px; padding: 10px 14px; outline: none;" placeholder="••••••••" autocomplete="current-password" aria-required="true" />
+                <span asp-validation-for="Input.Password" style="color: #ef4444; font-size: 0.78rem;"></span>
+            </div>
+
+            <div style="margin-bottom: 25px; display: flex; align-items: center; gap: 8px;">
+                <input class="form-check-input" asp-for="Input.RememberMe" style="cursor: pointer; background-color: rgba(0,0,0,0.5); border-color: var(--glass-border);" />
+                <label asp-for="Input.RememberMe" style="color: var(--text-muted); font-size: 0.85rem; cursor: pointer;">
+                    Запомнить меня
+                </label>
+            </div>
+
+            <button id="login-submit" type="submit" class="btn-futuristic" style="width: 100%; padding: 12px; font-size: 1rem; font-weight: bold;">
+                Войти
+            </button>
+
+            <div style="margin-top: 20px; text-align: center; border-top: 1px solid var(--glass-border); padding-top: 18px;">
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">
+                    Ещё нет аккаунта?
+                    <a href="/Account/Register" style="color: var(--neon-cyan); text-decoration: none; font-weight: bold; margin-left: 5px;">
+                        Зарегистрироваться
+                    </a>
+                </p>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
