@@ -5,19 +5,19 @@ using NutriWeb.Data;
 using NutriWeb.Models;
 using NutriWeb.Services;
 
-var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+var options = new WebApplicationOptions
 {
     Args = args
-});
+};
 
-// Отключаем FileSystemWatcher (ReloadOnChange) для предотвращения ошибки лимита inotify в Linux/Docker
-builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
-{
-    foreach (var source in config.Sources.OfType<Microsoft.Extensions.Configuration.Json.JsonConfigurationSource>())
-    {
-        source.ReloadOnChange = false;
-    }
-});
+var builder = WebApplication.CreateBuilder(options);
+
+// Отключаем FileSystemWatcher (reloadOnChange), чтобы избежать ошибки лимита inotify в Linux/Docker
+builder.Configuration.Sources.Clear();
+builder.Configuration
+    .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
+    .AddEnvironmentVariables();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
