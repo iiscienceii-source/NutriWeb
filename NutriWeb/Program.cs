@@ -12,7 +12,7 @@ var options = new WebApplicationOptions
 
 var builder = WebApplication.CreateBuilder(options);
 
-// Отключаем FileSystemWatcher (reloadOnChange) для предотвращения ошибки лимита inotify в Linux/Docker
+// Отключаем FileSystemWatcher для предотвращения ошибки inotify в Docker
 builder.Configuration.Sources.Clear();
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
@@ -56,46 +56,53 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
 
-    // 1. Автоматическое применение миграций и создание таблиц
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
-        dbContext.Database.Migrate();
+        // Гарантированное создание всех таблиц в PostgreSQL
+        await dbContext.Database.EnsureCreatedAsync();
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "Ошибка при авто-применении миграций базы данных.");
+        logger.LogError(ex, "Ошибка при создании структуры базы данных.");
     }
 
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-    // 2. Создаем роль Admin
-    if (!await roleManager.RoleExistsAsync("Admin"))
+    try
     {
-        await roleManager.CreateAsync(new IdentityRole("Admin"));
-    }
-
-    // 3. Создаем аккаунт администратора по умолчанию
-    var adminEmail = "admin@nutriweb.com";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-    if (adminUser == null)
-    {
-        adminUser = new ApplicationUser
+        // Создаем роль Admin
+        if (!await roleManager.RoleExistsAsync("Admin"))
         {
-            UserName = adminEmail,
-            Email = adminEmail,
-            EmailConfirmed = true
-        };
-
-        var result = await userManager.CreateAsync(adminUser, "Admin123!");
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(adminUser, "Admin");
+            await roleManager.CreateAsync(new IdentityRole("Admin"));
         }
+
+        // Создаем аккаунт администратора по умолчанию
+        var adminEmail = "admin@nutriweb.com";
+        var adminUser = await userManager.FindByEmailAsync(adminEmail);
+
+        if (adminUser == null)
+        {
+            adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
+                EmailConfirmed = true
+            };
+
+            var result = await userManager.CreateAsync(adminUser, "Admin123!");
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Ошибка при инициализации ролей или пользователя Admin.");
     }
 }
 
