@@ -11,8 +11,8 @@ using NutriWeb.Data;
 namespace NutriWeb.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260816094354_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260816185909_InitialPostgres")]
+    partial class InitialPostgres
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
