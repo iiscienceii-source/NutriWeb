@@ -7,42 +7,55 @@ namespace NutriWeb.Services
     public class EmailSender : IEmailSender
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<EmailSender> _logger;
 
-        public EmailSender(IConfiguration configuration)
+        public EmailSender(IConfiguration configuration, ILogger<EmailSender> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
             var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
-            var port = int.Parse(_configuration["EmailSettings:Port"] ?? "587");
+            var portStr = _configuration["EmailSettings:Port"] ?? "465";
+            int port = int.TryParse(portStr, out var p) ? p : 465;
+
             var senderEmail = _configuration["EmailSettings:SenderEmail"];
-            var password = _configuration["EmailSettings:Password"];
+            var password = _configuration["EmailSettings:Password"]?.Replace(" ", "");
 
             if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(password))
             {
-                // Если данные не заданы, пропускаем отправку (для избежания ошибок при тестах)
+                _logger.LogWarning("EmailSender: Учетные данные почты не заданы в Environment Variables.");
                 return;
             }
 
-            using var client = new SmtpClient(smtpServer, port)
+            try
             {
-                Credentials = new NetworkCredential(senderEmail, password),
-                EnableSsl = true
-            };
+                using var client = new SmtpClient(smtpServer, port)
+                {
+                    Credentials = new NetworkCredential(senderEmail, password),
+                    EnableSsl = true,
+                    Timeout = 10000 // Таймаут 10 секунд, чтобы страница не зависала
+                };
 
-            var mailMessage = new MailMessage
+                var mailMessage = new MailMessage
+                {
+                    From = new MailAddress(senderEmail, "NutriWeb"),
+                    Subject = subject,
+                    Body = htmlMessage,
+                    IsBodyHtml = true
+                };
+
+                mailMessage.To.Add(email);
+
+                await client.SendMailAsync(mailMessage);
+                _logger.LogInformation("EmailSender: Письмо восстановление пароля отправлено на {Email}", email);
+            }
+            catch (Exception ex)
             {
-                From = new MailAddress(senderEmail, "NutriWeb"),
-                Subject = subject,
-                Body = htmlMessage,
-                IsBodyHtml = true
-            };
-
-            mailMessage.To.Add(email);
-
-            await client.SendMailAsync(mailMessage);
+                _logger.LogError(ex, "EmailSender: Ошибка при отправке письма через SMTP на {Email}", email);
+            }
         }
     }
 }
