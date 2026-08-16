@@ -31,43 +31,45 @@ namespace NutriWeb.Services
                 return;
             }
 
-            // Фоновая асинхронная отправка, чтобы веб-страница не зависала
-            _ = Task.Run(async () =>
+            try
             {
-                try
+                var message = new MimeMessage();
+                message.From.Add(new MailboxAddress("NutriWeb", senderEmail));
+                message.To.Add(new MailboxAddress("", email));
+                message.Subject = subject;
+
+                var bodyBuilder = new BodyBuilder
                 {
-                    var message = new MimeMessage();
-                    message.From.Add(new MailboxAddress("NutriWeb", senderEmail));
-                    message.To.Add(new MailboxAddress("", email));
-                    message.Subject = subject;
+                    HtmlBody = htmlMessage
+                };
+                message.Body = bodyBuilder.ToMessageBody();
 
-                    var bodyBuilder = new BodyBuilder
-                    {
-                        HtmlBody = htmlMessage
-                    };
-                    message.Body = bodyBuilder.ToMessageBody();
+                using var client = new SmtpClient();
 
-                    using var client = new SmtpClient();
+                // Таймаут 10 секунд
+                client.Timeout = 10000;
 
-                    // Выбираем правильный режим шифрования под порт Render
-                    var secureSocketOptions = port == 465
-                        ? SecureSocketOptions.SslOnConnect
-                        : SecureSocketOptions.StartTls;
+                // Для 587 порта в MailKit используем StartTls, для 465 - SslOnConnect
+                var options = port == 465
+                    ? SecureSocketOptions.SslOnConnect
+                    : SecureSocketOptions.StartTls;
 
-                    await client.ConnectAsync(smtpServer, port, secureSocketOptions);
-                    await client.AuthenticateAsync(senderEmail, password);
-                    await client.SendAsync(message);
-                    await client.DisconnectAsync(true);
+                _logger.LogInformation("EmailSender: Подключение к {SmtpServer}:{Port}...", smtpServer, port);
+                await client.ConnectAsync(smtpServer, port, options);
 
-                    _logger.LogInformation("EmailSender: Письмо сброса пароля успешно отправлено на {Email}", email);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "EmailSender: Ошибка при отправке письма через MailKit на {Email}", email);
-                }
-            });
+                _logger.LogInformation("EmailSender: Авторизация для {SenderEmail}...", senderEmail);
+                await client.AuthenticateAsync(senderEmail, password);
 
-            await Task.CompletedTask;
+                _logger.LogInformation("EmailSender: Отправка письма на {Email}...", email);
+                await client.SendAsync(message);
+
+                await client.DisconnectAsync(true);
+                _logger.LogInformation("EmailSender: Письмо успешно отправлено!");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "EmailSender: Сбой при отправке письма через MailKit!");
+            }
         }
     }
 }
