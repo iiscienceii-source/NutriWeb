@@ -5,7 +5,19 @@ using NutriWeb.Data;
 using NutriWeb.Models;
 using NutriWeb.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args
+});
+
+// Отключаем FileSystemWatcher для предотвращения ошибки inotify в Linux/Docker
+builder.Host.ConfigureAppConfiguration((hostingContext, config) =>
+{
+    foreach (var source in config.Sources.OfType<Microsoft.Extensions.Configuration.Json.JsonConfigurationSource>())
+    {
+        source.ReloadOnChange = false;
+    }
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=nutriweb.db";
@@ -14,6 +26,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlite(connectionString));
 
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
+    options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = false;
     options.Password.RequiredLength = 6;
     options.Password.RequireNonAlphanumeric = false;
@@ -34,7 +47,6 @@ using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
 
-    // 0. Автоматическое создание/применение миграций базы данных при старте
     try
     {
         var dbContext = services.GetRequiredService<ApplicationDbContext>();
@@ -49,13 +61,11 @@ using (var scope = app.Services.CreateScope())
     var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
     var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-    // 1. Создаем роль Admin
     if (!await roleManager.RoleExistsAsync("Admin"))
     {
         await roleManager.CreateAsync(new IdentityRole("Admin"));
     }
 
-    // 2. Создаем учетную запись администратора, если её нет
     var adminEmail = "admin@nutriweb.com";
     var adminUser = await userManager.FindByEmailAsync(adminEmail);
 
