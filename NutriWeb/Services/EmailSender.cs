@@ -1,7 +1,6 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
+using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity.UI.Services;
-using MimeKit;
 
 namespace NutriWeb.Services
 {
@@ -9,6 +8,7 @@ namespace NutriWeb.Services
     {
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailSender> _logger;
+        private static readonly HttpClient HttpClient = new();
 
         public EmailSender(IConfiguration configuration, ILogger<EmailSender> logger)
         {
@@ -18,57 +18,48 @@ namespace NutriWeb.Services
 
         public async Task SendEmailAsync(string email, string subject, string htmlMessage)
         {
-            var smtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
-            var portStr = _configuration["EmailSettings:Port"] ?? "587";
-            int port = int.TryParse(portStr, out var p) ? p : 587;
+            var apiKey = _configuration["EmailSettings:ResendApiKey"];
 
-            var senderEmail = _configuration["EmailSettings:SenderEmail"];
-            var password = _configuration["EmailSettings:Password"]?.Replace(" ", "");
+            // На бесплатном тарифе Resend отправка идет от тестового адреса
+            var senderEmail = "onboarding@resend.dev";
 
-            if (string.IsNullOrEmpty(senderEmail) || string.IsNullOrEmpty(password))
+            if (string.IsNullOrEmpty(apiKey))
             {
-                _logger.LogWarning("EmailSender: Учетные данные почты не заданы в Environment Variables.");
+                _logger.LogWarning("EmailSender: API Ключ ResendApiKey не найден в Environment Variables.");
                 return;
             }
 
             try
             {
-                var message = new MimeMessage();
-                message.From.Add(new MailboxAddress("NutriWeb", senderEmail));
-                message.To.Add(new MailboxAddress("", email));
-                message.Subject = subject;
+                _logger.LogInformation("EmailSender: Отправка письма через Resend API на {Email}...", email);
 
-                var bodyBuilder = new BodyBuilder
+                var payload = new
                 {
-                    HtmlBody = htmlMessage
+                    from = $"NutriWeb <{senderEmail}>",
+                    to = new[] { email },
+                    subject = subject,
+                    html = htmlMessage
                 };
-                message.Body = bodyBuilder.ToMessageBody();
 
-                using var client = new SmtpClient();
+                var request = new HttpRequestMessage(HttpMethod.Post, "https://api.resend.com/emails");
+                request.Headers.Add("Authorization", $"Bearer {apiKey}");
+                request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
-                // Таймаут 10 секунд
-                client.Timeout = 10000;
+                var response = await HttpClient.SendAsync(request);
 
-                // Для 587 порта в MailKit используем StartTls, для 465 - SslOnConnect
-                var options = port == 465
-                    ? SecureSocketOptions.SslOnConnect
-                    : SecureSocketOptions.StartTls;
-
-                _logger.LogInformation("EmailSender: Подключение к {SmtpServer}:{Port}...", smtpServer, port);
-                await client.ConnectAsync(smtpServer, port, options);
-
-                _logger.LogInformation("EmailSender: Авторизация для {SenderEmail}...", senderEmail);
-                await client.AuthenticateAsync(senderEmail, password);
-
-                _logger.LogInformation("EmailSender: Отправка письма на {Email}...", email);
-                await client.SendAsync(message);
-
-                await client.DisconnectAsync(true);
-                _logger.LogInformation("EmailSender: Письмо успешно отправлено!");
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("EmailSender: Письмо успешно доставлено через Resend API!");
+                }
+                else
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("EmailSender: Ошибка Resend API ({StatusCode}): {Error}", response.StatusCode, errorBody);
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "EmailSender: Сбой при отправке письма через MailKit!");
+                _logger.LogError(ex, "EmailSender: Критическое исключение при отправке через Resend API!");
             }
         }
     }
